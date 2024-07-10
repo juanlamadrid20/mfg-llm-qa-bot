@@ -112,6 +112,11 @@ print(signature.to_dict())
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
 # persist model to mlflow
 import json
 with mlflow.start_run():

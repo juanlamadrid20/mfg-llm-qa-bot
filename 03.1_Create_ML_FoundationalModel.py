@@ -35,6 +35,11 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
 
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA

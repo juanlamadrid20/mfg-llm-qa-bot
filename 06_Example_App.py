@@ -39,8 +39,22 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
 os.environ['DATABRICKS_URL']=configs["DATABRICKS_URL"]
 os.environ['DATABRICKS_TOKEN']=configs["DATABRICKS_TOKEN"]
+
+# COMMAND ----------
+
+import json
+print(json.dumps(configs, indent=4))
+
+# COMMAND ----------
+
+
 
 # COMMAND ----------
 

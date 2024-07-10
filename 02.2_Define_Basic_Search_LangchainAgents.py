@@ -73,10 +73,15 @@ from langchain.llms import OpenAI
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
 def get_retriever():
     '''Get the langchain vector retriever from the Databricks object '''
     vsc = VectorSearchClient(workspace_url=configs["DATABRICKS_URL"], personal_access_token=configs['DATABRICKS_TOKEN'])  
-    index = vsc.get_index(endpoint_name=configs['vector_endpoint_name'], 
+    index = vsc.get_index(endpoint_name="one-env-shared-endpoint-4", 
                           index_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['vector_index']}")
 
     index.describe()
@@ -116,10 +121,12 @@ from mlflow.deployments import get_deploy_client
 mlflow_deploy_client = mlflow.deployments.get_deploy_client("databricks")
 
 try:
-  openaikey = f"{{{{secrets/solution-accelerator-cicd/openai_api}}}}" #change to your key
+  # openaikey = f"{{{{secrets/solution-accelerator-cicd/openai_api}}}}" #change to your key
+
+  openaikey = f"{{{{secrets/juan-few-scope/openai_api_key}}}}" #change to your key
 
   mlflow_deploy_client.create_endpoint(
-    name=f"{configs['serving_endpoint_name']}_rkm",
+    name=f"{configs['serving_endpoint_name']}_juan",
     config={
       "served_entities": [{
           "external_model": {
@@ -144,7 +151,7 @@ except Exception as e:
 # COMMAND ----------
 
 completions_response = mlflow_deploy_client.predict(
-    endpoint=f"{configs['serving_endpoint_name']}_rkm",
+    endpoint=f"{configs['serving_endpoint_name']}_juan",
     inputs={
         "prompt": "How is ph level calculated",
         "temperature": 0.1,
@@ -162,7 +169,7 @@ print(completions_response)
 # COMMAND ----------
 
 from langchain.llms import Databricks
-llmai = Databricks(endpoint_name=f"{configs['serving_endpoint_name']}_rkm", extra_params={"temperature": 0.1, "max_tokens": 1000})
+llmai = Databricks(endpoint_name=f"{configs['serving_endpoint_name']}_juan", extra_params={"temperature": 0.1, "max_tokens": 1000})
 
 # COMMAND ----------
 

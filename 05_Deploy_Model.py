@@ -79,6 +79,11 @@ os.environ['DATABRICKS_TOKEN']=creds.token
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
 #[0] is used for creation with name and config.
 #[1] is used for updates.
 served_models = [

@@ -35,6 +35,17 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+import json
+print(json.dumps(configs, indent=4))
+
+# COMMAND ----------
+
+# vector_endpoint_name = f"{configs['vector_endpoint_name']}"
+vector_endpoint_name = "one-env-shared-endpoint-4"
+print(vector_endpoint_name)
+
+# COMMAND ----------
+
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.prompts import PromptTemplate
 
@@ -78,7 +89,7 @@ from langchain.llms import Databricks
 def get_retriever():
     '''Get the langchain vector retriever from the Databricks object '''
     vsc = VectorSearchClient() # auth via env vars     
-    index = vsc.get_index(endpoint_name=configs['vector_endpoint_name'], 
+    index = vsc.get_index(endpoint_name=vector_endpoint_name, 
                           index_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['vector_index']}")
 
     index.describe()
@@ -91,6 +102,8 @@ def get_retriever():
     #filter isnt working here
     return vectorstore.as_retriever(search_kwargs={"k": configs["num_similar_docs"]}, search_type = "similarity")
 
+
+# COMMAND ----------
 
 # test our retriever
 retriever = get_retriever()
@@ -115,9 +128,17 @@ import mlflow.deployments
 from mlflow.deployments import get_deploy_client
 
 mlflow_deploy_client = mlflow.deployments.get_deploy_client("databricks")
-nameep = f"{configs['serving_endpoint_name']}_rkm"
+
+# COMMAND ----------
+
+nameep = f"{configs['serving_endpoint_name']}_juan"
+
+# COMMAND ----------
+
+
 try:
-  openaikey = f"{{{{secrets/solution-accelerator-cicd/openai_api}}}}" #change to your key
+  # openaikey = f"{{{{secrets/solution-accelerator-cicd/openai_api}}}}" #change to your key
+  openaikey = f"{{{{secrets/juan-few-scope/openai_api_key}}}}" #change to your key
   mlflow_deploy_client.create_endpoint(
     name=nameep,
     config={
@@ -157,7 +178,10 @@ print(completions_response)
 
 # COMMAND ----------
 
-llm = Databricks(endpoint_name=f"{configs['serving_endpoint_name']}_rkm", extra_params={"temperature": 0.1, "max_tokens": 1000})
+llm = Databricks(
+  endpoint_name=f"{configs['serving_endpoint_name']}_juan"
+  , extra_params={"temperature": 0.1, "max_tokens": 1000}
+)
 
 # COMMAND ----------
 
@@ -171,6 +195,7 @@ llm.invoke('How is ph level calculated')
 # COMMAND ----------
 
 llm = Databricks(endpoint_name=f"databricks-mpt-7b-instruct", extra_params={"temperature": 0.1, "max_tokens": 500})
+# llm = Databricks(endpoint_name=f"databricks-meta-llama-3-70b-instruct", extra_params={"temperature": 0.1, "max_tokens": 500})
 
 # COMMAND ----------
 
@@ -178,7 +203,7 @@ llm = Databricks(endpoint_name=f"databricks-mpt-7b-instruct", extra_params={"tem
 
 # COMMAND ----------
 
-llm.invoke('How is ph level calculated')
+llm.invoke('How is ph level calculated. List 2 approaches and be verbose.')
 
 # COMMAND ----------
 
@@ -223,29 +248,36 @@ filterdict={'Name':'ACETONE'}
 filterdict={}
 # fetch_k Amount of documents to pass to search algorithm
 retriever.search_kwargs = {"k": 6, "filter":filterdict, "fetch_k":30}
-res = qa_chain.invoke("What issues can acetone exposure cause")
-print(res)
+res = qa_chain.invoke("What issues can acetone exposure cause?")
+# print(res)
 
 print(res['result'])
 
 # COMMAND ----------
 
 filterdict={}
-retriever.search_kwargs = {"k": 6, "filter":filterdict, "fetch_k":20}
-res = qa_chain.invoke({"query":"Explain to me the difference between nuclear fission and fusion."})
-res
+retriever.search_kwargs = {"k": 6, "filter":filterdict, "fetch_k":40}
+res = qa_chain.invoke({'query':'what should we do if OSHA is involved?'})
+# res
 
-#print(res['result'])
+print(res['result'])
 
 # COMMAND ----------
 
 filterdict={}
 retriever.search_kwargs = {"k": 6, "filter":filterdict, "fetch_k":40}
-res = qa_chain.invoke({'query':'what should we do if OSHA is involved?'})
+res = qa_chain.invoke({'query':'what is recomended first aid response for eye contact?'})
 res
 
-#print(res['result'])
+# print(res['result'])
 
+# COMMAND ----------
+
+compare properties of acetone and acetaldehyde. Show me the response in a table
+What are the exposure limits for acetyl methyl carbinol?
+
+what should we consider prior to working with acetylaminoflourene
+does acetylaminoflourene ignite?
 
 # COMMAND ----------
 

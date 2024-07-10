@@ -36,6 +36,16 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
+import pprint
+pprint.pprint(configs)
+
+# COMMAND ----------
+
+import json
+print(json.dumps(configs, indent=4))
+
+# COMMAND ----------
+
 from langchain.document_loaders import PyPDFLoader
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain import HuggingFaceHub
@@ -147,13 +157,46 @@ def parseAndChunkPDF(pdfPath):
 
 # COMMAND ----------
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf
+from pyspark.sql.types import StructType, StructField, StringType, LongType
 
-pathlst = dbutils.fs.ls(dbfsnormalize(configs['data_dir']))
-df = spark.createDataFrame(pathlst)
-df = df.withColumn('chunks', parseAndChunkPDF(df.path))
+# Simulate FileInfo structure (in Databricks, this is part of dbutils)
+class FileInfo:
+    def __init__(self, path, name, size, modificationTime):
+        self.path = path
+        self.name = name
+        self.size = size
+        self.modificationTime = modificationTime
+
+def remove_dbfs_from_path(path):
+    return path.replace('dbfs:', '')
+
+# List files in the directory
+pathlst = dbutils.fs.ls("/Volumes/juan_dev/sol_acc_mfg_llm/mfg_llm/data/sds_pdf")
+
+# Create a list of updated FileInfo objects with 'dbfs:' removed from paths
+updated_pathlst = [FileInfo(remove_dbfs_from_path(file_info.path), file_info.name, file_info.size, file_info.modificationTime) for file_info in pathlst]
+
+# Create a Spark DataFrame with the updated FileInfo objects
+# spark = SparkSession.builder.appName("RemoveDBFS").getOrCreate()
+schema = StructType([
+    StructField("path", StringType(), True),
+    StructField("name", StringType(), True),
+    StructField("size", LongType(), True),
+    StructField("modificationTime", LongType(), True)
+])
+
+df = spark.createDataFrame([(file_info.path, file_info.name, file_info.size, file_info.modificationTime) for file_info in updated_pathlst], schema)
+
+# Show the DataFrame
 display(df)
 
 
+# COMMAND ----------
+
+df = df.withColumn('chunks', parseAndChunkPDF(df.path))
+display(df)
 
 # COMMAND ----------
 
@@ -252,6 +295,8 @@ time.sleep(5)
 
 # COMMAND ----------
 
+
+
 endpoint = vsc.get_endpoint(
   name=configs['vector_endpoint_name'])
 endpoint
@@ -268,8 +313,18 @@ time.sleep(20)
 
 # COMMAND ----------
 
+vector_endpoint_name = f"{configs['vector_endpoint_name']}"
+# vector_endpoint_name = "one-env-shared-endpoint-4"
+print(vector_endpoint_name)
+
+# COMMAND ----------
+
+
+
+# COMMAND ----------
+
 index = vsc.create_delta_sync_index(
-    endpoint_name=configs['vector_endpoint_name'],
+    endpoint_name=vector_endpoint_name, # f"{configs['vector_endpoint_name']}",
     source_table_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['source_sds_table']}",
     index_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['vector_index']}",
     pipeline_type='TRIGGERED',
@@ -278,7 +333,6 @@ index = vsc.create_delta_sync_index(
     embedding_model_endpoint_name=configs['embedding_model_endpoint']
   )
 
-
 # COMMAND ----------
 
 # MAGIC %md
@@ -286,7 +340,11 @@ index = vsc.create_delta_sync_index(
 
 # COMMAND ----------
 
-index = vsc.get_index(endpoint_name=configs['vector_endpoint_name'], index_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['vector_index']}")
+print(configs['vector_index'])
+
+# COMMAND ----------
+
+index = vsc.get_index(endpoint_name=vector_endpoint_name, index_name=f"{configs['source_catalog']}.{configs['source_schema']}.{configs['vector_index']}")
 
 index.describe()
 
@@ -326,14 +384,24 @@ else:
 
 # COMMAND ----------
 
+print(f"{configs['source_catalog']}.{configs['source_schema']}.{configs['source_sds_table']}")
+
+# COMMAND ----------
+
 # returns [col1, col2, ...]
 # this can be set to any subset of the columns
 all_columns = spark.table(f"{configs['source_catalog']}.{configs['source_schema']}.{configs['source_sds_table']}").columns
 print(all_columns)
+
+# COMMAND ----------
+
+# query_text="What happens with Acetaldehyde Ammonia chemical exposure?"
+query_text="Is my employer required to label checmicals in the workplace?"
+
 results = index.similarity_search(
-  query_text="What happens with acetaldehyde chemical exposure?",
+  query_text=query_text,
   columns=all_columns,
-  num_results=10)
+  num_results=3)
 
 results
 
@@ -358,7 +426,7 @@ results = index.similarity_search(
   query_text="what happens if there are hazardous substances?",
   columns=all_columns,
   filters = {"metadata_name": "ACETONITRILE"},
-  num_results=10 )
+  num_results=3)
 
 results
 

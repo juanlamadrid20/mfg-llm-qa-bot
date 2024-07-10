@@ -34,7 +34,8 @@ configs={}
 import os
 
 ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()
-configs['DATABRICKS_TOKEN'] = dbutils.secrets.get('solution-accelerator-cicd', 'mfg-sa-key') 
+configs['DATABRICKS_TOKEN'] = ctx.apiToken().get() 
+# configs['DATABRICKS_TOKEN'] = dbutils.secrets.get('solution-accelerator-cicd', 'mfg-sa-key') 
 configs['DATABRICKS_URL'] = ctx.apiUrl().getOrElse(None)
 
 # COMMAND ----------
@@ -81,20 +82,22 @@ import mlflow
 
 #to use workspace registry - False
 #to use uc registry - True
-configs['isucregistry']=False
+configs['isucregistry'] = True
 
-configs['source_catalog'] = "mfg_llm_cat"
-configs['source_schema'] = "mfg_llm_schema"
+configs['source_catalog'] = "juan_dev" # mfg_llm_cat
+configs['source_schema'] = "sol_acc_mfg_llm" # mfg_llm_schema
 configs['source_sds_table'] = "mfg_llm_sds"
 
-configs['vector_endpoint_name'] = "one-env-shared-endpoint-1"
+configs['vector_endpoint_name'] = "one-env-shared-endpoint-4"
 
 # Vector index
-configs['vector_index'] = "mfg_llm_solnaccel_index"
+configs['vector_index'] = "juan_sol_acc_mfg_llm_index"
 configs['embedding_model_endpoint'] = "databricks-bge-large-en"
 
 
-configs['data_dir'] = f'/dbfs/Users/{username}/data/sds_pdf'
+# configs['data_dir'] = f'/dbfs/Users/{username}/data/sds_pdf'
+configs['data_dir'] = f'/Volumes/juan_dev/sol_acc_mfg_llm/mfg_llm/data/sds_pdf'
+
 configs['chunk_size']=600
 configs['chunk_overlap']=20
 
